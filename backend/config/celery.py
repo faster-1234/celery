@@ -9,9 +9,7 @@ os.environ.setdefault(
 )
 
 
-app = Celery(
-    "config"
-)
+app = Celery("config")
 
 
 app.config_from_object(

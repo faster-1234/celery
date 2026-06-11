@@ -24,6 +24,7 @@ kombu==5.6.2
 msgpack==1.1.2
 packaging==26.2
 prompt_toolkit==3.0.52
+psycopg[binary]==3.2.10
 py-ubjson==0.16.1
 pycparser==3.0
 pyOpenSSL==26.2.0

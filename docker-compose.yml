@@ -1,20 +1,59 @@
 services:
 
-  backend:
-
-    image: websocket-backend
-
+  websocket-backend:
+    build:
+      context: ./backend
     container_name: websocket-backend
-
+    command: >
+      sh -c "python manage.py migrate &&
+             daphne config.asgi:application -b 0.0.0.0 -p 8000"
     ports:
       - "8000:8000"
+    depends_on:
+      websocket-postgres:
+        condition: service_healthy
+      websocket-redis:
+        condition: service_started
+    environment:
+      - DB_HOST=websocket-postgres
+      - DB_NAME=websocket_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
 
-
-  redis:
-
-    image: redis:latest
-
+  websocket-redis:
+    image: redis
     container_name: websocket-redis
 
-    ports:
-      - "6379:6379"
+  websocket-celery:
+    build:
+      context: ./backend
+    container_name: websocket-celery
+    command: celery -A config worker --loglevel=info
+    depends_on:
+      websocket-postgres:
+        condition: service_healthy
+      websocket-redis:
+        condition: service_started
+    environment:
+      - DB_HOST=websocket-postgres
+      - DB_NAME=websocket_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+
+  websocket-postgres:
+    image: postgres:16-alpine
+    container_name: websocket-postgres
+    environment:
+      - POSTGRES_DB=websocket_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
